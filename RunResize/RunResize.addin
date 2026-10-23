@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>RunResize</Name>
+    <Assembly>RunResize\RunResize.dll</Assembly>
+    <AddInId>2F03A0FD-1DE6-415B-B027-6B07A2C1A22A</AddInId>
+    <FullClassName>RunResize.App</FullClassName>
+    <VendorId>RunResize</VendorId>
+    <VendorDescription>RunResize: resize pipe and duct runs together with their fittings</VendorDescription>
+  </AddIn>
+</RevitAddIns>
