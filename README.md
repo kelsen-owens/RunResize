@@ -28,7 +28,7 @@ RunResize collects no data. It runs only inside Revit on your computer, makes no
 
 ## Support
 
-Report problems or ask questions at <https://github.com/kelsen-owens/RunResize/issues>.
+Email <runresize@gmail.com>, or report problems and ask questions at <https://github.com/kelsen-owens/RunResize/issues>.
 
 ## No warranty
 
