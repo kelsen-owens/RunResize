@@ -30,6 +30,10 @@ RunResize collects no data. It runs only inside Revit on your computer, makes no
 
 Report problems or ask questions at <https://github.com/kelsen-owens/RunResize/issues>.
 
+## No warranty
+
+RunResize is provided as is, without warranty of any kind, and you use it at your own risk. Check the results before you issue drawings.
+
 ## You'll need
 
 1. **Revit 2027.** For development, ADN membership is free for startups for three years and includes Autodesk software licences: <https://aps.autodesk.com/developer/overview/autodesk-developer-network-membership>. A 30-day Revit trial also works to start.
