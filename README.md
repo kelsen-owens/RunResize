@@ -84,9 +84,22 @@ Revit 2027.3, 2026-10-29, on the Snowdon Towers Plumbing and HVAC samples and th
 | 5 | Round duct runs with elbows, imperial with half-inch sizes and metric | Pass |
 | 6 | Copper and PVC pipes across a bend | Pass on sizes: only sizes both segments allow are offered. The resize to 2 1/2" is refused cleanly, because the copper pipe is a 0.63" stub |
 | 7 | A duct and a pipe selected together | Pass: asks for one kind of run at a time |
-| 8 | Gate valve between 6" pipes (→ 8" and → 4") | Pass: switches to the 8" or 4" type and stays connected |
+| 8 | Gate valve between 6" pipes (→ 8" and → 4") | Pass: switches to the 8" or 4" type and stays connected, whether the valve is selected or not, and with the elbows at both ends selected too |
 
-Not covered yet: oval ducts, a rectangular transition inside a selected run, and a type-sized valve whose new size isn't loaded. The size picker and summary dialogs still need a hand check in a live session.
+The size picker and both kinds of summary were also checked by hand in a live session: case 1 resized and then undid with one Ctrl+Z, and case 3a showed only RunResize's summary.
+
+Not covered yet: oval ducts, a rectangular transition inside a selected run, and a type-sized valve whose new size isn't loaded.
+
+## Compared with Revit's Change Size
+
+Revit 2027.3 has **Modify | Pipes > Edit Multiple > Change Size**. On the same sample runs:
+
+| Same run | Change Size | RunResize |
+|---|---|---|
+| Pipes selected, elbows between them not selected | Resizes the pipes only; the elbows keep the old size | Resizes the pipes and the elbows between them |
+| Pipes and elbows selected | Resizes all of them | Resizes all of them |
+| Selection includes a valve or other accessory | The button isn't offered | Resizes the run; the valve switches to its type in the new size |
+| Pipes on both sides of a valve | Resizes the pipes; the valve keeps its size | Same as the row above |
 
 ## Families to know about
 
