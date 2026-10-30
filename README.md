@@ -43,6 +43,8 @@ Start Revit, choose **Always Load** for "RunResize (dev host)", and the **Resize
 
 Sandboxed shells, such as the Claude desktop app's, redirect writes to AppData, so run the registration from a normal terminal.
 
+The button's icons are drawn by `tools\make-icons.ps1`, which writes the PNGs in `RunResize\Resources`. Rerun it after changing the drawing.
+
 ## Automated tests
 
 Debug builds include a test runner. Put a `testplan.json` next to the built DLL (`RunResize\bin\Debug\net10.0-windows\`) and start Revit. Revit minimizes itself, opens each model in the plan in the background, runs every case through the same code as the button, writes `testresults.txt` next to the DLL, and exits. Every case is rolled back and nothing is saved.

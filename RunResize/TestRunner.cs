@@ -56,6 +56,7 @@ internal static class TestRunner
             string text = File.ReadAllText(PlanFile);
             File.Move(PlanFile, PlanFile + ".done", overwrite: true); // a crash mid-run mustn't rerun the plan on the next start
             plan = JsonSerializer.Deserialize<Plan>(text, Json)!;
+            LogButton(uiapp);
             foreach (ModelPlan model in plan.Models) RunModel(uiapp.Application, model);
         }
         catch (Exception ex)
@@ -69,6 +70,20 @@ internal static class TestRunner
 
         Log("DONE");
         if (plan?.Exit != false) uiapp.PostCommand(RevitCommandId.LookupPostableCommandId(PostableCommand.ExitRevit));
+    }
+
+    /// <summary>Logs the Resize Run button's icons as Revit holds them, so a run shows they loaded.</summary>
+    static void LogButton(UIApplication uiapp)
+    {
+        RibbonItem? button = uiapp.GetRibbonPanels()
+            .Where(panel => panel.Name == "MEP Runs")
+            .SelectMany(panel => panel.GetItems())
+            .FirstOrDefault(item => item.Name == "RunResize.ResizeRun");
+        Log(button is PushButton push ? $"button icons: {Describe(push.Image)} small, {Describe(push.LargeImage)} large" : "button not found");
+
+        static string Describe(object? image) => image is System.Windows.Media.Imaging.BitmapSource bitmap
+            ? $"{bitmap.PixelWidth}x{bitmap.PixelHeight} px at {bitmap.DpiX:0.##} dpi"
+            : "none";
     }
 
     static void RunModel(Autodesk.Revit.ApplicationServices.Application app, ModelPlan model)

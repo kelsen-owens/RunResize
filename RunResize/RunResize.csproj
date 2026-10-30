@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <None Update="RunResize.addin" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Resources\*.png" />
   </ItemGroup>
 
   <!-- Revit loads Debug builds through RunResize.DevHost (see the README), so building here needs no install step.
