@@ -11,19 +11,29 @@ internal sealed class RevitWindow(IntPtr handle) : IWin32Window
     public IntPtr Handle { get; } = handle;
 }
 
-/// <summary>Collects Revit's warnings for the summary instead of interrupting the user with each one.</summary>
-internal sealed class WarningCollector : IFailuresPreprocessor
+/// <summary>
+/// Collects Revit's warnings for the summary instead of interrupting the user with each one.
+/// Errors roll the whole resize back; they're kept so the summary can say what blocked it.
+/// </summary>
+internal sealed class FailureCollector : IFailuresPreprocessor
 {
-    public List<string> Messages { get; } = new();
+    public List<string> Warnings { get; } = new();
+    public List<(string Text, ICollection<ElementId> Elements)> Errors { get; } = new();
 
     public FailureProcessingResult PreprocessFailures(FailuresAccessor failuresAccessor)
     {
         foreach (FailureMessageAccessor failure in failuresAccessor.GetFailureMessages())
         {
-            if (failure.GetSeverity() != FailureSeverity.Warning) continue;
-            Messages.Add(failure.GetDescriptionText());
-            failuresAccessor.DeleteWarning(failure);
+            if (failure.GetSeverity() == FailureSeverity.Warning)
+            {
+                Warnings.Add(failure.GetDescriptionText());
+                failuresAccessor.DeleteWarning(failure);
+            }
+            else
+            {
+                Errors.Add((failure.GetDescriptionText(), failure.GetFailingElementIds()));
+            }
         }
-        return FailureProcessingResult.Continue;
+        return Errors.Count > 0 ? FailureProcessingResult.ProceedWithRollBack : FailureProcessingResult.Continue;
     }
 }

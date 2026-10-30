@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>RunResize (dev host)</Name>
+    <Assembly>set by the InstallToRevit target</Assembly>
+    <AddInId>DC9A9CBE-8F7B-4C8F-AD56-9D76637A8AF8</AddInId>
+    <FullClassName>RunResize.DevHost.DevHost</FullClassName>
+    <VendorId>RunResize</VendorId>
+    <VendorDescription>Loads the RunResize debug build, so rebuilding it doesn't bring back Revit's unsigned add-in prompt</VendorDescription>
+  </AddIn>
+</RevitAddIns>

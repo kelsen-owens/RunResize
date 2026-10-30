@@ -61,13 +61,30 @@ internal static class RunSizing
     /// </summary>
     public static IReadOnlyList<SizeOption> CatalogSizes(Document doc, RunKind kind, IEnumerable<MEPCurve> curves)
     {
-        IEnumerable<double> values = kind == RunKind.Pipe ? PipeCatalog(curves.OfType<Pipe>()) : DuctCatalog(doc, kind);
-        ForgeTypeId spec = kind == RunKind.Pipe ? SpecTypeId.PipeSize : SpecTypeId.DuctSize;
-        Units units = doc.GetUnits();
-        return values
-            .OrderBy(v => v)
-            .Select(v => new SizeOption(v, UnitFormatUtils.Format(units, spec, v, false)))
-            .ToList();
+        List<double> values = (kind == RunKind.Pipe ? PipeCatalog(curves.OfType<Pipe>()) : DuctCatalog(doc, kind)).OrderBy(v => v).ToList();
+        List<string> labels = Labels(doc.GetUnits(), kind == RunKind.Pipe ? SpecTypeId.PipeSize : SpecTypeId.DuctSize, values);
+        return values.Select((v, i) => new SizeOption(v, labels[i])).ToList();
+    }
+
+    /// <summary>
+    /// Sizes in the project's units. Coarse display rounding can merge sizes (4.5" reads as 5" when duct sizes show
+    /// whole inches), so the labels get finer until every size reads differently.
+    /// </summary>
+    static List<string> Labels(Units units, ForgeTypeId spec, IReadOnlyList<double> values)
+    {
+        var options = new FormatOptions(units.GetFormatOptions(spec));
+        for (int attempt = 0; ; attempt++)
+        {
+            var format = new FormatValueOptions();
+            format.SetFormatOptions(options);
+            List<string> labels = values.Select(v => UnitFormatUtils.Format(units, spec, v, false, format)).ToList();
+            if (labels.Distinct().Count() == labels.Count || attempt == 6) return labels;
+
+            ForgeTypeId unit = options.GetUnitTypeId();
+            double finer = FormatOptions.IsValidAccuracy(unit, options.Accuracy / 2) ? options.Accuracy / 2 : options.Accuracy / 10;
+            if (!FormatOptions.IsValidAccuracy(unit, finer)) return labels;
+            options.Accuracy = finer;
+        }
     }
 
     static IEnumerable<double> PipeCatalog(IEnumerable<Pipe> pipes)
@@ -144,67 +161,194 @@ internal static class RunSizing
     }
 
     /// <summary>
-    /// Sets one fitting connector's size. Families drive connector sizes from their own parameters, so this
-    /// sets the instance parameter the connector is tied to, falling back to the connector itself.
+    /// Sets the size of a fitting's connectors that face the selection. Families drive connector sizes from their own
+    /// parameters, so this sets the instance parameter each connector is tied to, falling back to the connector itself.
+    /// Families that size by type (many valves) switch to the loaded type that has the new size.
     /// Returns null on success, otherwise why it failed.
     /// </summary>
-    public static string? SetConnectorSize(FamilyInstance fitting, Connector connector, RunKind kind, RunSize size)
+    public static string? SetFittingSize(FamilyInstance fitting, IReadOnlyList<Connector> ends, RunKind kind, RunSize size)
     {
-        if (connector.GetMEPConnectorInfo() is not MEPFamilyConnectorInfo info)
-            return "its connectors carry no size information";
-
-        if (IsRound(kind))
+        var problems = new List<string?>();
+        var typeValues = new Dictionary<ElementId, double>();
+        foreach (Connector end in ends)
         {
-            Outcome round = SetDrivingParameter(fitting, info, BuiltInParameter.CONNECTOR_DIAMETER, size.Diameter);
-            if (!round.Associated) round = SetDrivingParameter(fitting, info, BuiltInParameter.CONNECTOR_RADIUS, size.Diameter / 2);
-            if (!round.Associated) round = TrySet(() => connector.Radius = size.Diameter / 2);
-            return round.Problem;
+            if (end.GetMEPConnectorInfo() is not MEPFamilyConnectorInfo info)
+            {
+                problems.Add("its connectors carry no size information");
+                continue;
+            }
+
+            if (IsRound(kind))
+            {
+                problems.Add(SetDimension(fitting, info, typeValues, () => end.Radius = size.Diameter / 2,
+                    (BuiltInParameter.CONNECTOR_DIAMETER, size.Diameter), (BuiltInParameter.CONNECTOR_RADIUS, size.Diameter / 2)));
+            }
+            else
+            {
+                RunSize own = TargetFor(end, ends, kind, size);
+                problems.Add(SetDimension(fitting, info, typeValues, () => end.Width = own.Width, (BuiltInParameter.CONNECTOR_WIDTH, own.Width)));
+                problems.Add(SetDimension(fitting, info, typeValues, () => end.Height = own.Height, (BuiltInParameter.CONNECTOR_HEIGHT, own.Height)));
+            }
+        }
+        if (typeValues.Count > 0) problems.Add(SwitchType(fitting, typeValues));
+
+        List<string> found = problems.OfType<string>().Distinct().ToList();
+        return found.Count == 0 ? null : string.Join("; ", found);
+    }
+
+    /// <summary>
+    /// The size one fitting connector should take. A rectangular connector's width runs along its own X axis, which can
+    /// lie along the duct's height instead (many elbows sit that way), and then the run's width and height swap.
+    /// A connector that meets another fitting follows a sibling connector that meets a duct.
+    /// </summary>
+    public static RunSize TargetFor(Connector end, IReadOnlyList<Connector> ends, RunKind kind, RunSize size)
+    {
+        if (IsRound(kind)) return size;
+        bool turned = Turned(end) ?? ends.Select(Turned).FirstOrDefault(t => t is not null) ?? false;
+        return turned ? RunSize.Rect(size.Height, size.Width) : size;
+    }
+
+    /// <summary>Whether a connector's width axis lies across the width axis of the duct it meets; null when it meets no duct.</summary>
+    static bool? Turned(Connector end)
+    {
+        Connector? duct = end.AllRefs.Cast<Connector>().FirstOrDefault(o => o.Owner is MEPCurve && IsPhysical(o));
+        return duct is null ? null : Math.Abs(end.CoordinateSystem.BasisX.DotProduct(duct.CoordinateSystem.BasisX)) < 0.7;
+    }
+
+    /// <summary>
+    /// Sets one connector dimension through the first family parameter it's tied to (diameter or radius, say).
+    /// A tie to a type parameter goes into typeValues for SwitchType; an untied dimension is set on the connector.
+    /// </summary>
+    static string? SetDimension(FamilyInstance fitting, MEPFamilyConnectorInfo info, Dictionary<ElementId, double> typeValues,
+        Action setConnector, params (BuiltInParameter Parameter, double Value)[] ties)
+    {
+        foreach ((BuiltInParameter connectorParameter, double value) in ties)
+        {
+            ElementId familyParameterId = info.GetAssociateFamilyParameterId(new ElementId(connectorParameter));
+            if (familyParameterId.Equals(ElementId.InvalidElementId)) continue;
+
+            if (FindParameter(fitting, familyParameterId) is Parameter driver)
+            {
+                if (driver.IsReadOnly) return $"\"{driver.Definition.Name}\" is calculated by a formula in the family";
+                return driver.Set(value) ? null : $"Revit rejected the new \"{driver.Definition.Name}\"";
+            }
+            if (FindParameter(fitting.Symbol, familyParameterId) is not null)
+            {
+                typeValues[familyParameterId] = value;
+                return null;
+            }
         }
 
-        Outcome width = SetDrivingParameter(fitting, info, BuiltInParameter.CONNECTOR_WIDTH, size.Width);
-        if (!width.Associated) width = TrySet(() => connector.Width = size.Width);
-        Outcome height = SetDrivingParameter(fitting, info, BuiltInParameter.CONNECTOR_HEIGHT, size.Height);
-        if (!height.Associated) height = TrySet(() => connector.Height = size.Height);
-        return width.Problem ?? height.Problem;
-    }
-
-    readonly record struct Outcome(bool Associated, string? Problem)
-    {
-        public static readonly Outcome NotAssociated = new(false, null);
-        public static readonly Outcome Done = new(true, null);
-        public static Outcome Fail(string problem) => new(true, problem);
-    }
-
-    static Outcome SetDrivingParameter(FamilyInstance fitting, MEPFamilyConnectorInfo info, BuiltInParameter connectorParameter, double value)
-    {
-        ElementId familyParameterId = info.GetAssociateFamilyParameterId(new ElementId(connectorParameter));
-        if (familyParameterId.Equals(ElementId.InvalidElementId)) return Outcome.NotAssociated;
-
-        // Missing from the instance parameters means the family sizes by type; the connector fallback reports that.
-        Parameter? driver = fitting.Parameters.Cast<Parameter>().FirstOrDefault(p => p.Id.Equals(familyParameterId));
-        if (driver is null) return Outcome.NotAssociated;
-        if (driver.IsReadOnly) return Outcome.Fail($"\"{driver.Definition.Name}\" is calculated by a formula in the family");
-        return driver.Set(value) ? Outcome.Done : Outcome.Fail($"Revit rejected the new \"{driver.Definition.Name}\"");
-    }
-
-    static Outcome TrySet(Action setSize)
-    {
         try
         {
-            setSize();
-            return Outcome.Done;
+            setConnector();
+            return null;
         }
         catch (Autodesk.Revit.Exceptions.InvalidOperationException)
         {
-            return Outcome.Fail("its size is set by its type, not per instance");
+            return "its size is set by its type, not per instance";
         }
         catch (Autodesk.Revit.Exceptions.ArgumentException ex)
         {
-            return Outcome.Fail(ex.Message);
+            return ex.Message;
         }
     }
 
+    /// <summary>Switches a fitting that sizes by type to the one loaded type of its family whose size parameters hold the new values.</summary>
+    static string? SwitchType(FamilyInstance fitting, IReadOnlyDictionary<ElementId, double> values)
+    {
+        bool HasValues(FamilySymbol type) => values.All(v =>
+            FindParameter(type, v.Key) is { StorageType: StorageType.Double } p && Near(p.AsDouble(), v.Value));
+
+        FamilySymbol current = fitting.Symbol;
+        if (HasValues(current)) return null;
+        List<FamilySymbol> matches = current.Family.GetFamilySymbolIds()
+            .Select(id => fitting.Document.GetElement(id))
+            .OfType<FamilySymbol>()
+            .Where(HasValues)
+            .ToList();
+        if (matches.Count == 0) return $"its size comes from its type, and the project has no {current.FamilyName} type in the new size";
+        if (matches.Count > 1) return $"its size comes from its type, and several {current.FamilyName} types have the new size, so pick one by hand";
+
+        if (!matches[0].IsActive) matches[0].Activate();
+        fitting.Symbol = matches[0];
+        return null;
+    }
+
+    /// <summary>Whether a connector has the given size. Read it after Revit regenerates: some families ignore a new size without an error.</summary>
+    public static bool HasSize(Connector connector, RunKind kind, RunSize size) => IsRound(kind)
+        ? Near(connector.Radius * 2, size.Diameter)
+        : Near(connector.Width, size.Width) && Near(connector.Height, size.Height);
+
+    /// <summary>Fittings and accessories connected to the given elements. Comparing before and after a resize shows the transitions Revit added.</summary>
+    public static HashSet<ElementId> ConnectedFittings(Document doc, IEnumerable<ElementId> ids)
+    {
+        var found = new HashSet<ElementId>();
+        foreach (ElementId id in ids)
+            foreach (Connector end in ConnectorsOf(doc.GetElement(id)))
+                foreach (Connector other in end.AllRefs)
+                    if (other.Owner is FamilyInstance neighbour && !neighbour.Id.Equals(id) && IsPhysical(other))
+                        found.Add(neighbour.Id);
+        return found;
+    }
+
+    /// <summary>Each connected end of the given elements: the element, its connector, and the element on the other side.</summary>
+    public static List<(ElementId Owner, int Connector, ElementId Other)> Joins(Document doc, IEnumerable<ElementId> ids)
+    {
+        var joins = new List<(ElementId, int, ElementId)>();
+        foreach (ElementId id in ids)
+        {
+            foreach (Connector end in ConnectorsOf(doc.GetElement(id)))
+            {
+                Connector? other = end.AllRefs.Cast<Connector>().FirstOrDefault(o => !o.Owner.Id.Equals(id) && IsPhysical(o));
+                if (other is not null) joins.Add((id, end.Id, other.Owner.Id));
+            }
+        }
+        return joins;
+    }
+
+    /// <summary>Whether an end from Joins is still connected, if only to a transition Revit put in.</summary>
+    public static bool StillJoined(Document doc, (ElementId Owner, int Connector, ElementId Other) join) =>
+        ConnectorsOf(doc.GetElement(join.Owner)).FirstOrDefault(c => c.Id == join.Connector) is { IsConnected: true };
+
+    /// <summary>
+    /// Switching a fitting to another type (a valve to its bigger size, say) leaves the pipes or ducts beside it unattached.
+    /// Moves each loose end along its run onto the fitting's connector and connects it again.
+    /// </summary>
+    public static void Reattach(FamilyInstance fitting, IEnumerable<(int Connector, ElementId Other)> joins)
+    {
+        Document doc = fitting.Document;
+        foreach ((int connectorId, ElementId otherId) in joins)
+        {
+            Connector end = fitting.MEPModel.ConnectorManager.Lookup(connectorId);
+            if (end.IsConnected || doc.GetElement(otherId) is not MEPCurve { Location: LocationCurve { Curve: Line line } location } curve) continue;
+
+            bool movesStart = line.GetEndPoint(0).DistanceTo(end.Origin) < line.GetEndPoint(1).DistanceTo(end.Origin);
+            XYZ kept = line.GetEndPoint(movesStart ? 1 : 0);
+            if (line.Direction.CrossProduct((end.Origin - kept).Normalize()).GetLength() > 1e-6) continue; // the fitting moved off the run's line
+
+            location.Curve = movesStart ? Line.CreateBound(end.Origin, kept) : Line.CreateBound(kept, end.Origin);
+            doc.Regenerate();
+            end = fitting.MEPModel.ConnectorManager.Lookup(connectorId);
+            if (end.IsConnected) continue;
+            curve.ConnectorManager.Connectors.Cast<Connector>()
+                .FirstOrDefault(c => c.ConnectorType == ConnectorType.End && !c.IsConnected && c.Origin.IsAlmostEqualTo(end.Origin, 1e-6))
+                ?.ConnectTo(end);
+        }
+    }
+
+    static IEnumerable<Connector> ConnectorsOf(Element? e) => (e switch
+    {
+        MEPCurve curve => curve.ConnectorManager,
+        FamilyInstance instance => instance.MEPModel?.ConnectorManager,
+        _ => null,
+    })?.Connectors.Cast<Connector>() ?? [];
+
     static bool IsPhysical(Connector c) => c.ConnectorType is ConnectorType.End or ConnectorType.Curve;
+
+    static Parameter? FindParameter(Element e, ElementId id) => e.Parameters.Cast<Parameter>().FirstOrDefault(p => p.Id.Equals(id));
+
+    static bool Near(double a, double b) => Math.Abs(a - b) < 1e-5;
 
     static string? Set(Element e, BuiltInParameter parameter, double value)
     {

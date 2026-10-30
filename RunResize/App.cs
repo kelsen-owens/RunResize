@@ -20,6 +20,9 @@ public sealed class App : IExternalApplication
                               "Fittings and accessories between the selected pipes or ducts are resized to match.",
         };
         panel.AddItem(button);
+#if DEBUG
+        TestRunner.Register(application);
+#endif
         return Result.Succeeded;
     }
 

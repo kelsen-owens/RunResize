@@ -22,14 +22,7 @@
     <None Update="RunResize.addin" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- Debug builds install into the Revit 2027 per-user add-ins folder. Close Revit first, since it locks the DLL. -->
-  <Target Name="InstallToRevit" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <PropertyGroup>
-      <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\2027</RevitAddinsDir>
-    </PropertyGroup>
-    <MakeDir Directories="$(RevitAddinsDir)\RunResize" />
-    <Copy SourceFiles="$(OutputPath)RunResize.dll;$(OutputPath)RunResize.pdb" DestinationFolder="$(RevitAddinsDir)\RunResize" ContinueOnError="WarnAndContinue" />
-    <Copy SourceFiles="RunResize.addin" DestinationFolder="$(RevitAddinsDir)" ContinueOnError="WarnAndContinue" />
-  </Target>
+  <!-- Revit loads Debug builds through RunResize.DevHost (see the README), so building here needs no install step.
+       Close Revit before building, since it locks the DLL. -->
 
 </Project>
