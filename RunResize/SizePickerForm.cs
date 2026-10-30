@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -35,14 +36,25 @@ internal sealed class SizePickerForm : Form
         var buttons = new FlowLayoutPanel
         {
             FlowDirection = FlowDirection.RightToLeft,
+            WrapContents = false,
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Margin = new Padding(0, 12, 0, 0),
+            Margin = Padding.Empty,
         };
         buttons.Controls.Add(cancel);
         buttons.Controls.Add(resize);
-        grid.Controls.Add(buttons);
-        grid.SetColumnSpan(buttons, 2);
+
+        // The store wants the privacy policy reachable from inside the app; it's on the help page.
+        var help = new LinkLabel { Text = "Help and privacy", AutoSize = true, Anchor = AnchorStyles.Left };
+        help.LinkClicked += (_, _) => Process.Start(new ProcessStartInfo(App.HelpUrl) { UseShellExecute = true });
+
+        var footer = new TableLayoutPanel { ColumnCount = 2, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 12, 0, 0) };
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        footer.Controls.Add(help);
+        footer.Controls.Add(buttons);
+        grid.Controls.Add(footer);
+        grid.SetColumnSpan(footer, 2);
 
         Controls.Add(grid);
         AcceptButton = resize;

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Template for RunResize.bundle. tools\make-bundle.ps1 stamps the version from RunResize.csproj.
+     UpgradeCode stays the same for every release; give ProductCode a new GUID for each one. -->
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="Revit" ProductType="Application"
+                    Name="RunResize"
+                    Description="Resizes a run of pipes or ducts together with its fittings, in one undoable step."
+                    AppVersion="0.0.0" FriendlyVersion="0.0.0" Author="RunResize"
+                    ProductCode="{37DB26C5-AC13-4B21-A6CD-A6E2CE35D3DE}"
+                    UpgradeCode="{C2444EB4-6CE3-4D41-9FDB-A01484B8A31B}"
+                    HelpFile="./Contents/Help.html"
+                    OnlineDocumentation="https://github.com/kelsen-owens/RunResize#readme">
+  <CompanyDetails Name="RunResize" Url="https://github.com/kelsen-owens/RunResize" />
+  <!-- Revit loads a component only when SeriesMin names the running version, so each Revit year needs its own block. -->
+  <Components Description="Revit 2027">
+    <RuntimeRequirements OS="Win64" Platform="Revit" SeriesMin="R2027" SeriesMax="R2027" />
+    <ComponentEntry AppName="RunResize" Version="0.0.0" ModuleName="./Contents/2027/RunResize.addin"
+                    AppDescription="Adds Resize Run to the Add-Ins tab." />
+  </Components>
+</ApplicationPackage>

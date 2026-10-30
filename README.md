@@ -4,18 +4,31 @@ A free Revit 2027 add-in that resizes a run of pipes or ducts **together with it
 
 Revit 2027 dropped this from the Modify | Multi-Select ribbon, so segments and fittings now have to be resized separately. The [Revit Ideas request to restore it](https://forums.autodesk.com/t5/revit-ideas/revit-2027-duct-pipe-conduit-amp-tray-sizing/idi-p/14166334) drew 200 votes in about four months, and updates 2027.1–2027.3 haven't brought it back.
 
-**Status: v0.1.1, tested in Revit 2027.3 on Autodesk's sample models (results below). Not on the Autodesk App Store yet.**
+**Status: v1.0.0, being prepared for the Autodesk App Store. Its resize code is v0.1.1's, tested in Revit 2027.3 on Autodesk's sample models (results below).**
+
+## Use it
+
+1. Select the pipes or ducts of a run. To select a whole connected run, hover over one, press Tab until the run highlights, and click.
+2. On the **Add-Ins** tab, in the **MEP Runs** panel, click **Resize Run**. With nothing selected, it asks you to pick.
+3. Pick the new size and click **Resize**. A summary says what changed, and one Ctrl+Z undoes the whole resize.
 
 ## What it does
 
 - Pipes, round ducts, rectangular ducts and oval ducts. Conduit and cable tray come next.
-- Uses the current selection, or asks you to pick. Tab selects a connected run.
 - Offers only valid sizes: the duct size table for the shape, or for pipes the sizes every selected pipe's segment allows. When the project's display rounding would make two sizes read the same (4 1/2" showing as 5"), the labels get more precise.
 - Fittings and accessories that sit **between** selected pipes or ducts are resized too, even if you didn't select them. Fittings at the edge of the selection keep their size, and Revit adds transitions there.
 - Fittings sized by type, like most valves, switch to the family's type in the new size if it's loaded in the project.
 - Rectangular fittings that sit a quarter turn to the duct, as many elbows do, get width and height the right way round.
 - All or nothing: if Revit can't keep the run connected at the new size, nothing changes and the elements involved are selected.
 - One summary instead of a stream of warnings: what was resized, how many transitions Revit added, and anything that kept its old size, with the reason.
+
+## Privacy
+
+RunResize collects no data. It runs only inside Revit on your computer, makes no network connections, and stores nothing outside the model you're editing, so there's nothing to keep, share or delete. The **Help and privacy** link in its size dialog, and F1 on its button, open this page in your browser.
+
+## Support
+
+Report problems or ask questions at <https://github.com/kelsen-owens/RunResize/issues>.
 
 ## You'll need
 
@@ -43,7 +56,9 @@ Start Revit, choose **Always Load** for "RunResize (dev host)", and the **Resize
 
 Sandboxed shells, such as the Claude desktop app's, redirect writes to AppData, so run the registration from a normal terminal.
 
-The button's icons are drawn by `tools\make-icons.ps1`, which writes the PNGs in `RunResize\Resources`. Rerun it after changing the drawing.
+The button's icons are drawn by `tools\make-icons.ps1`, which writes the PNGs in `RunResize\Resources` and the store's listing icon in `store`. Rerun it after changing the drawing.
+
+`tools\make-bundle.ps1` builds the Release add-in and packs it as `dist\RunResize.bundle` and `dist\RunResize-<version>.zip`, the file the Autodesk store builds its installer from. The bundle's `PackageContents.xml` comes from `bundle\`.
 
 ## Automated tests
 

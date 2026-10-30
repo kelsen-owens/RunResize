@@ -8,6 +8,9 @@ namespace RunResize;
 /// <summary>Adds the Resize Run button to the Add-Ins tab.</summary>
 public sealed class App : IExternalApplication
 {
+    /// <summary>The user help, which holds the privacy policy. F1 on the button and the size dialog's link open it.</summary>
+    internal const string HelpUrl = "https://github.com/kelsen-owens/RunResize#readme";
+
     public Result OnStartup(UIControlledApplication application)
     {
         RibbonPanel panel = application.CreateRibbonPanel("MEP Runs");
@@ -23,6 +26,7 @@ public sealed class App : IExternalApplication
             Image = Icon("ResizeRun16.png"),
             LargeImage = Icon("ResizeRun32.png"),
         };
+        button.SetContextualHelp(new ContextualHelp(ContextualHelpType.Url, HelpUrl));
         panel.AddItem(button);
 #if DEBUG
         TestRunner.Register(application);

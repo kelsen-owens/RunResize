@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RunResize help</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; max-width: 46em; margin: 2em auto; padding: 0 1em; line-height: 1.5; color: #222; }
+  h1, h2 { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>RunResize for Autodesk&reg; Revit&reg; 2027</h1>
+<p>Resizes a run of pipes or ducts together with its fittings, valves and other accessories, in one undoable step.</p>
+
+<h2>Use it</h2>
+<ol>
+  <li>Select the pipes or ducts of a run. To select a whole connected run, hover over one, press Tab until the run highlights, and click.</li>
+  <li>On the <b>Add-Ins</b> tab, in the <b>MEP Runs</b> panel, click <b>Resize Run</b>. With nothing selected, it asks you to pick.</li>
+  <li>Pick the new size and click <b>Resize</b>. A summary says what changed, and one Ctrl+Z undoes the whole resize.</li>
+</ol>
+
+<h2>What gets resized</h2>
+<ul>
+  <li>Pipes, round ducts, rectangular ducts and oval ducts. Conduit and cable tray aren't supported yet.</li>
+  <li>Fittings and accessories between selected pipes or ducts, even if you didn't select them. Fittings at the ends of the selection keep their size, and Revit adds transitions there.</li>
+  <li>Valves and other fittings sized by type switch to the family's type in the new size, if that type is loaded in the project.</li>
+  <li>Only valid sizes are offered: the duct size table, or for pipes the sizes every selected pipe's segment allows.</li>
+</ul>
+<p>If Revit can't keep the run connected at the new size, nothing changes, and the elements involved are selected. A common cause is a short pipe or duct between two fittings, with no room for the bigger fittings.</p>
+
+<h2>Privacy</h2>
+<p>RunResize collects no data. It runs only inside Revit on your computer, makes no network connections, and stores nothing outside the model you're editing, so there's nothing to keep, share or delete. The <b>Help and privacy</b> link in its size dialog opens its help page in your browser.</p>
+
+<h2>Support</h2>
+<p>Report problems or ask questions at <a href="https://github.com/kelsen-owens/RunResize/issues">github.com/kelsen-owens/RunResize/issues</a>.</p>
+</body>
+</html>
