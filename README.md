@@ -60,6 +60,8 @@ The button's icons are drawn by `tools\make-icons.ps1`, which writes the PNGs in
 
 `tools\make-bundle.ps1` builds the Release add-in and packs it as `dist\RunResize.bundle` and `dist\RunResize-<version>.zip`, the file the Autodesk store builds its installer from. The bundle's `PackageContents.xml` comes from `bundle\`.
 
+Store screenshots: `tools\capture-revit.ps1` captures Revit's own windows into `dist\screenshots\v2`, and `tools\make-screenshots.ps1` crops them and adds the headlines, writing the 1600x900 images to `dist\screenshots`.
+
 ## Automated tests
 
 Debug builds include a test runner. Put a `testplan.json` next to the built DLL (`RunResize\bin\Debug\net10.0-windows\`) and start Revit. Revit minimizes itself, opens each model in the plan in the background, runs every case through the same code as the button, writes `testresults.txt` next to the DLL, and exits. Every case is rolled back and nothing is saved.
