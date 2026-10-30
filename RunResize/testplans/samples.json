@@ -1,0 +1,35 @@
+{
+  "exit": true,
+  "models": [
+    {
+      "model": "C:\\Program Files\\Autodesk\\Revit 2027\\Samples\\Snowdon Towers Sample Plumbing.rvt",
+      "cases": [
+        { "name": "c1 copper 1/2 run, pipes only -> 3/4", "select": [1428328, 1431322, 1431372, 1431280], "size": 0.75 },
+        { "name": "c2 same run, pipes + elbows -> 1", "select": [1428328, 1431330, 1431322, 1431387, 1431372, 1431383, 1431280], "size": 1 },
+        { "name": "c3a sanitary tee with stub pipes -> 3", "select": [1431408, 1431460], "size": 3 },
+        { "name": "c3b sanitary tee with long pipes -> 5", "select": [1471158, 1471167], "size": 5 },
+        { "name": "c4 PVC run with interior bend -> 3", "select": [1380445, 1433121], "size": 3 },
+        { "name": "c6 copper + PVC across a bend -> 2 1/2", "select": [1556048, 1494207], "size": 2.5 },
+        { "name": "c8 gate valve between 6in pipes -> 8", "select": [1591161, 1591150], "size": 8 },
+        { "name": "c8b gate valve between 6in pipes -> 4 (valve shrinks)", "select": [1591161, 1591150], "size": 4 },
+        { "name": "c8c pipes + gate valve selected together -> 8", "select": [1591161, 1389546, 1591150], "size": 8 },
+        { "name": "c8d whole run: elbows, pipes, valve -> 8", "select": [1591168, 1591161, 1389546, 1591150, 1591159], "size": 8 }
+      ]
+    },
+    {
+      "model": "C:\\Program Files\\Autodesk\\Revit 2027\\Samples\\Snowdon Towers Sample HVAC.rvt",
+      "cases": [
+        { "name": "c5r round duct run with elbows, one size up", "find": "round", "grow": 1 },
+        { "name": "c5 rectangular duct run, one width up", "find": "rectangular", "grow": 1 }
+      ]
+    },
+    {
+      "model": "C:\\Program Files\\Autodesk\\Revit 2027\\Samples\\BIM_Projekt_Golden_Nugget-Gebaeudetechnik.rvt",
+      "cases": [
+        { "name": "c5 rectangular duct run with elbow + transition, one width up", "find": "rectangular", "grow": 1 },
+        { "name": "c5r round duct run, one size up", "find": "round", "grow": 1 },
+        { "name": "c7 duct + pipe selected together", "find": "mixed" }
+      ]
+    }
+  ]
+}

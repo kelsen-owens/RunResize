@@ -92,7 +92,22 @@ internal static class TestRunner
     static void RunModel(Autodesk.Revit.ApplicationServices.Application app, ModelPlan model)
     {
         Log($"=== {Path.GetFileName(model.Model)}");
-        Document doc = app.OpenDocumentFile(model.Model);
+        Document doc;
+        app.FailuresProcessing += DeleteWarnings;
+        try
+        {
+            doc = app.OpenDocumentFile(model.Model);
+        }
+        catch (Exception ex)
+        {
+            Log($"MODEL ERROR {ex.GetType().Name}: {ex.Message}");
+            return;
+        }
+        finally
+        {
+            app.FailuresProcessing -= DeleteWarnings;
+        }
+
         try
         {
             foreach (CasePlan c in model.Cases)
@@ -362,6 +377,20 @@ internal static class TestRunner
         };
         Log($"DIALOG {e.DialogId}: {text}");
         e.OverrideResult(e is TaskDialogShowingEventArgs ? (int)TaskDialogResult.Close : 1);
+    }
+
+    /// <summary>
+    /// Older or messy models raise warnings as they open, and Revit lists them in a dialog. Dismissing that dialog
+    /// cancels the opening, so the warnings are deleted before it shows.
+    /// </summary>
+    static void DeleteWarnings(object? sender, Autodesk.Revit.DB.Events.FailuresProcessingEventArgs e)
+    {
+        FailuresAccessor failures = e.GetFailuresAccessor();
+        int warnings = failures.GetFailureMessages().Count(f => f.GetSeverity() == FailureSeverity.Warning);
+        if (warnings == 0) return;
+        Log($"warnings while opening: {warnings}");
+        failures.DeleteAllWarnings();
+        e.SetProcessingResult(FailureProcessingResult.Continue);
     }
 
     static void Log(string line) => File.AppendAllText(ResultsFile, line + Environment.NewLine);
