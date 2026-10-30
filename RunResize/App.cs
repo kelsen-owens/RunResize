@@ -11,6 +11,8 @@ public sealed class App : IExternalApplication
     /// <summary>The user help, which holds the privacy policy. F1 on the button and the size dialog's link open it.</summary>
     internal const string HelpUrl = "https://github.com/kelsen-owens/RunResize#readme";
 
+    internal const string SupportEmail = "runresize@gmail.com";
+
     public Result OnStartup(UIControlledApplication application)
     {
         RibbonPanel panel = application.CreateRibbonPanel("MEP Runs");

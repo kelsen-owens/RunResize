@@ -137,6 +137,7 @@ The code is small enough to read in one sitting and covers the API ideas most ME
 - `RunSizing.CatalogSizes`: where valid sizes live. Pipe segments (`PipeSegment.GetSizes()`) and `DuctSizeSettings`.
 - `RunSizing.SetCurveSize`: pipes and ducts are sized through built-in parameters such as `RBS_PIPE_DIAMETER_PARAM`.
 - `RunSizing.SetFittingSize`: fittings are user families whose connector sizes are driven by family parameters. The code asks each connector which parameter drives it (`MEPFamilyConnectorInfo.GetAssociateFamilyParameterId`). It sets that parameter on the instance, switches to the matching type when the parameter is a type parameter, and otherwise sets the connector itself.
+- `ResizeRunCommand.Execute`: an unexpected exception is shown with the support email, and the command returns Cancelled, so Revit undoes anything it changed.
 - `ResizeRunCommand.Resize`: everything happens in one transaction. After Revit regenerates, the code reads every size back, reconnects pipes beside a fitting whose type changed, and rolls the whole resize back if any connection came apart or Revit reported an error.
 
 ## Next

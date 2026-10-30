@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,20 @@ public sealed class ResizeRunCommand : IExternalCommand
     const string Title = "Resize Run";
 
     public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+    {
+        try
+        {
+            return Run(commandData);
+        }
+        catch (Exception ex)
+        {
+            // Any result but Succeeded makes Revit undo everything the command changed.
+            TaskDialog.Show(Title, $"Something went wrong, so nothing was changed.\n\n{ex.Message}\n\nPlease report it to {App.SupportEmail}.");
+            return Result.Cancelled;
+        }
+    }
+
+    static Result Run(ExternalCommandData commandData)
     {
         UIDocument uidoc = commandData.Application.ActiveUIDocument;
         Document doc = uidoc.Document;
