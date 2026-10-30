@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Text.Json;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Mechanical;
@@ -28,8 +30,9 @@ internal static class TestRunner
     /// One case. Select lists element IDs, or Find picks a duct run ("round", "rectangular") or a duct plus a pipe ("mixed").
     /// Size (inches) sets a round target, Width and Height a rectangular one; otherwise Grow steps up the size list from the
     /// run's current size. Probe lists fittings whose connector-to-parameter ties are logged instead of resizing anything.
+    /// External runs another add-in's debug code on the model instead (see <see cref="RunExternal"/>).
     /// </summary>
-    internal sealed record CasePlan(string Name, long[]? Select, string? Find, double? Size, double? Width, double? Height, int Grow, long[]? Probe);
+    internal sealed record CasePlan(string Name, long[]? Select, string? Find, double? Size, double? Width, double? Height, int Grow, long[]? Probe, string? External);
 
     static readonly JsonSerializerOptions Json = new() { PropertyNameCaseInsensitive = true };
 
@@ -113,6 +116,11 @@ internal static class TestRunner
     static void RunCase(Document doc, CasePlan plan)
     {
         Log($"--- {plan.Name}");
+        if (plan.External is { } external)
+        {
+            RunExternal(doc, external);
+            return;
+        }
         if (plan.Probe is { } probe)
         {
             foreach (long id in probe) Probe(doc, doc.GetElement(new ElementId(id)));
@@ -156,6 +164,27 @@ internal static class TestRunner
         Log($"highlight: {string.Join(", ", outcome.Highlight)}");
         Snapshot(doc, Around(doc, watched), "after");
         group.RollBack();
+    }
+
+    /// <summary>
+    /// Runs "path\to\Other.dll|Namespace.Type.Method", a public static method that takes the Document and returns text to
+    /// log. Revit only trusts this add-in's dev host, so another add-in in development borrows this runner.
+    /// </summary>
+    static void RunExternal(Document doc, string external)
+    {
+        string[] parts = external.Split('|');
+        int dot = parts[1].LastIndexOf('.');
+        Assembly assembly = AssemblyLoadContext.GetLoadContext(typeof(TestRunner).Assembly)!.LoadFromAssemblyPath(parts[0]);
+        MethodInfo method = assembly.GetType(parts[1][..dot], throwOnError: true)!.GetMethod(parts[1][(dot + 1)..])!;
+        try
+        {
+            var text = (string)method.Invoke(null, [doc])!;
+            foreach (string line in text.Split('\n')) Log(line.TrimEnd('\r'));
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            Log($"EXTERNAL ERROR {ex.InnerException}");
+        }
     }
 
     static (RunSize Size, string Label) Target(CasePlan plan, RunKind kind, IReadOnlyList<SizeOption> sizes, RunSize current)

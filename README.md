@@ -89,7 +89,7 @@ Debug builds include a test runner. Put a `testplan.json` next to the built DLL 
 }
 ```
 
-A case selects element IDs (`select`) or lets the runner find a duct run (`find`: `round`, `rectangular`, or `mixed` for a duct plus a pipe). The target is `size` in inches for round runs, `width` and `height` for rectangular ones, or `grow` steps up the size list. `probe` logs how a fitting's connectors are tied to family parameters instead of resizing anything. The log shows each case's summary exactly as the dialog would, plus every connection before and after.
+A case selects element IDs (`select`) or lets the runner find a duct run (`find`: `round`, `rectangular`, or `mixed` for a duct plus a pipe). The target is `size` in inches for round runs, `width` and `height` for rectangular ones, or `grow` steps up the size list. `probe` logs how a fitting's connectors are tied to family parameters instead of resizing anything. `external` (`"path\\to\\Other.dll|Namespace.Type.Method"`) calls a public static method in another assembly with the open `Document` and logs the text it returns, so an add-in still in development can borrow this runner. The log shows each case's summary exactly as the dialog would, plus every connection before and after.
 
 ## Test pass
 
