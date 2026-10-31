@@ -91,6 +91,8 @@ Debug builds include a test runner. Put a `testplan.json` next to the built DLL 
 
 A case selects element IDs (`select`) or lets the runner find a duct run (`find`: `round`, `rectangular`, or `mixed` for a duct plus a pipe). The target is `size` in inches for round runs, `width` and `height` for rectangular ones, or `grow` steps up the size list. `probe` logs how a fitting's connectors are tied to family parameters instead of resizing anything. `testplans\samples.json` holds the full test pass on Revit 2027's sample models; copy it next to the DLL as `testplan.json`. `external` (`"path\\to\\Other.dll|Namespace.Type.Method"`) calls a public static method in another assembly with the open `Document` and logs the text it returns, so an add-in still in development can borrow this runner. The log shows each case's summary exactly as the dialog would, plus every connection before and after.
 
+Debug builds also start other add-ins in development, since Revit only trusts RunResize's dev host: each line of `devaddins.txt` next to the DLL names an assembly and its application class (`path\to\Other.dll|Namespace.App`). One that fails to start is logged to `devaddins.log` and skipped.
+
 ## Test pass
 
 Revit 2027.3, 2026-10-29, on the Snowdon Towers Plumbing and HVAC samples and the German MEP sample (BIM_Projekt_Golden_Nugget-Gebaeudetechnik), using the runner above.

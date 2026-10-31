@@ -32,11 +32,18 @@ public sealed class App : IExternalApplication
         panel.AddItem(button);
 #if DEBUG
         TestRunner.Register(application);
+        DevAddins.Start(application);
 #endif
         return Result.Succeeded;
     }
 
-    public Result OnShutdown(UIControlledApplication application) => Result.Succeeded;
+    public Result OnShutdown(UIControlledApplication application)
+    {
+#if DEBUG
+        DevAddins.Stop(application);
+#endif
+        return Result.Succeeded;
+    }
 
     /// <summary>
     /// Reads an icon embedded from Resources (drawn by tools\make-icons.ps1). A resource stream rather than a pack URI,
