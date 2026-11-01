@@ -1,25 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>$(RevitTargetFramework)</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <!-- Builds next to the RunResize debug build, which it loads at startup. -->
-    <OutDir>$(MSBuildThisFileDirectory)..\RunResize\bin\Debug\net10.0-windows\</OutDir>
+    <!-- Builds next to the RunResize debug build of the same Revit year, which it loads at startup. -->
+    <OutDir Condition="'$(RevitVersion)' == '2027'">$(MSBuildThisFileDirectory)..\RunResize\bin\Debug\net10.0-windows\</OutDir>
+    <OutDir Condition="'$(RevitVersion)' != '2027'">$(MSBuildThisFileDirectory)..\RunResize\bin\$(RevitVersion)\Debug\$(RevitTargetFramework)\</OutDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2027.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2027.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitApiPackage)" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitApiPackage)" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
-  <!-- One-time dev setup, from a normal terminal with Revit closed: `dotnet build RunResize.DevHost -p:InstallToRevit=true`.
-       Registers the host in the Revit 2027 per-user add-ins folder and removes a plain RunResize manifest there, so the
-       add-in doesn't load twice. Opt-in because sandboxed shells (the Claude desktop app's) redirect AppData writes. -->
+  <!-- One-time dev setup, from a normal terminal with Revit closed: `dotnet build RunResize.DevHost -p:InstallToRevit=true`
+       (add -p:RevitVersion=2025 for another year). Registers the host in that year's per-user add-ins folder and removes a
+       plain RunResize manifest there, so the add-in doesn't load twice. Opt-in because sandboxed shells (the Claude desktop
+       app's) redirect AppData writes. -->
   <Target Name="InstallToRevit" AfterTargets="Build" Condition="'$(InstallToRevit)' == 'true'">
     <PropertyGroup>
-      <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\2027</RevitAddinsDir>
+      <RevitAddinsDir>$(APPDATA)\Autodesk\Revit\Addins\$(RevitVersion)</RevitAddinsDir>
       <HostManifest>$(IntermediateOutputPath)RunResize.DevHost.addin</HostManifest>
     </PropertyGroup>
     <Copy SourceFiles="RunResize.DevHost.addin" DestinationFiles="$(HostManifest)" />

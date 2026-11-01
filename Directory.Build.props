@@ -1,0 +1,17 @@
+<Project>
+  <!-- The Revit year to build for: 2027 by default, or another with `dotnet build RunResize -p:RevitVersion=2025`.
+       Revit 2025 and 2026 run on .NET 8, 2027 on .NET 10. Each year references its own year's API, so the other years
+       restore and build in their own folders (obj\2025, bin\2025), and 2027 keeps the default ones. -->
+  <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2027</RevitVersion>
+    <RevitTargetFramework Condition="$(RevitVersion) &gt;= 2027">net10.0-windows</RevitTargetFramework>
+    <RevitTargetFramework Condition="$(RevitVersion) &lt; 2027">net8.0-windows</RevitTargetFramework>
+    <!-- The API reference packages of each year's first public release (RevitAPI 25.0.0.0, 26.0.4.0, 27.0.0.0). -->
+    <RevitApiPackage>$(RevitVersion).0.0</RevitApiPackage>
+    <RevitApiPackage Condition="'$(RevitVersion)' == '2025'">2025.0.2</RevitApiPackage>
+    <RevitApiPackage Condition="'$(RevitVersion)' == '2026'">2026.0.4</RevitApiPackage>
+    <BaseIntermediateOutputPath Condition="'$(RevitVersion)' != '2027'">obj\$(RevitVersion)\</BaseIntermediateOutputPath>
+    <BaseOutputPath Condition="'$(RevitVersion)' != '2027'">bin\$(RevitVersion)\</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);bin\**;obj\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

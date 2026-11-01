@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>$(RevitTargetFramework)</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <PlatformTarget>x64</PlatformTarget>
@@ -13,10 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Reference assemblies only; Revit supplies the real API at runtime.
-         Pinned to the first 2027 release: .NET won't load an add-in built against a newer RevitAPI than the installed one. -->
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="2027.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
-    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="2027.0.0" PrivateAssets="all" ExcludeAssets="runtime" />
+    <!-- Reference assemblies only; Revit supplies the real API at runtime. The year comes from Directory.Build.props: the
+         add-in ships for 2027 only, and Debug builds for earlier years exist to run the test runner there.
+         Pinned to each year's first release: .NET won't load an add-in built against a newer RevitAPI than the installed one. -->
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitApiPackage)" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitApiPackage)" PrivateAssets="all" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
